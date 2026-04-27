@@ -40,9 +40,11 @@ class Move {
 };
 
 struct BoardState {
-  ull pieces[2][7];
+  ull pieces[2][7];  // [color][type] 0:White, 1:Black / 1:P, 2:N, 3:B, 4:R,
+                     // 5:Q, 6:K
   ull occupancy[2];
-  int currentTurn;
+  ull NotMoved[2] = {}; //킹, 룩, 폰의 초기 위치에서 변화 여부를 저장
+  int currentTurn;   // 0: 백 차례, 1: 흑 차례
 
   bool operator== (const BoardState& other) {
     for (int c = 0; c < 2; c++) {
@@ -69,17 +71,17 @@ struct BoardState {
 
 class Board {
  private:
-  ull pieces[2][7];  // [color][type] 0:White, 1:Black / 1:P, 2:N, 3:B, 4:R, 5:Q, 6:K
-  ull occupancy[2];
-  int currentTurn;  // 0: 백 차례, 1: 흑 차례
+  BoardState state;
   vector<BoardState> history;  // undo()를 위한 히스토리 스택
   map<BoardState, int> vis;  // 포지션별 방문 횟수를 저장하는 map
 
   // 비트보드 업데이트 헬퍼 함수
+  // 수 하나당 업데이트 하는거면 전체 비트보드 탐색까진 필요 없어서 나중에 수를 둘 때마다 그 부분만 갱신하는 것도 고려
+  
   void updateOccupancy() {
     for (int c = 0; c < 2; c++) {
-      occupancy[c] = 0;
-      for (int t = 1; t <= 6; t++) occupancy[c] |= pieces[c][t];
+      state.occupancy[c] = 0;
+      for (int t = 1; t <= 6; t++) state.occupancy[c] |= state.pieces[c][t];
     }
   }
 
@@ -87,8 +89,11 @@ class Board {
   int sqToIndex(int file, int rank) {
     int x = 8 - file;
     int y = rank - 1;
-    return y * 8 + x;
+    return y << 3 | x; //y * 8 + x
   }
+
+  // 비트보드 시프트 인덱스(0~63)을 파일과 랭크(1~8)로 변환 (A열=7, H열=0 기준)
+  pair<int, int> IndexTosq(int pos) { return {pos >> 3, pos | 7}; }
 
  public:
   Board() {
@@ -101,9 +106,29 @@ class Board {
 
   vector<Move> getMoves() {
     vector<Move> moves;
+    Move mv;
+    if (turn() == 0) {
+      // pawn
+      for (int i = 1; i <= ULONG_LONG_MAX >> 8; i <<= 1){
+        if(i & state.pieces[0][1]){
+          mv.setStart(IndexTosq(i));
+          mv.setEnd(IndexTosq(i << 3));
+          moves.push_back(mv);
+          if(notmoved & i){
+            mv.setEnd(IndexTosq(i << 6));
+            notmoved ^= i;
+            moves.push_back(mv);
+          }
+          if(state.occupancy[1] & )
+        }
+      }
+      //knight
+
+    }
+
     // TODO: 내부에 숨겨진 비트보드의 getKnightMoves, getSlidingMoves 등을
-    // 호출하여 비트보드 결과를 구한 뒤, Move 객체로 변환하여 moves에 push_back
-    // 합니다.
+    // 호출하여 비트보드 결과를 구한 뒤, Move 객체로 변환하여 moves에
+    // push_back 합니다.
     return moves;
   }
 
@@ -190,3 +215,4 @@ class Board {
     currentTurn = lastState.currentTurn;
   }
 };
+int main() { return 0; }
