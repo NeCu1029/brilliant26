@@ -125,7 +125,7 @@ class Board {
     Move mv;
     if (turn() == 0) {
       // pawn
-      for (int i = 1; i <= ULONG_LONG_MAX >> 8; i <<= 1){
+      for (int i = 1; i <= (ULLONG_MAX >> 8); i <<= 1){
         if(i & state.pieces[0][1]){
           mv.setStart(IndexTosq(i));
           mv.setEnd(IndexTosq(i << 8));
