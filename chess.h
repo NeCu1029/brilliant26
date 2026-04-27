@@ -1,4 +1,5 @@
 #include <cctype>
+#include <map>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -42,6 +43,28 @@ struct BoardState {
   ull pieces[2][7];
   ull occupancy[2];
   int currentTurn;
+
+  bool operator== (const BoardState& other) {
+    for (int c = 0; c < 2; c++) {
+      if (occupancy[c] != other.occupancy[c]) return false;
+      for (int i = 0; i < 7; i++) {
+        if (pieces[c][i] != other.pieces[c][i]) return false;
+      }
+    }
+    return currentTurn == other.currentTurn;
+  }
+
+  bool operator< (const BoardState& other) {
+    for (int c = 0; c < 2; c++) {
+      if (occupancy[c] < other.occupancy[c]) return true;
+      if (occupancy[c] > other.occupancy[c]) return false;
+      for (int i = 0; i < 7; i++) {
+        if (pieces[c][i] < other.pieces[c][i]) return true;
+        if (pieces[c][i] > other.pieces[c][i]) return false;
+      }
+    }
+    return currentTurn < other.currentTurn;
+  }
 };
 
 class Board {
@@ -50,6 +73,7 @@ class Board {
   ull occupancy[2];
   int currentTurn;  // 0: 백 차례, 1: 흑 차례
   vector<BoardState> history;  // undo()를 위한 히스토리 스택
+  map<BoardState, int> vis;  // 포지션별 방문 횟수를 저장하는 map
 
   // 비트보드 업데이트 헬퍼 함수
   void updateOccupancy() {
@@ -93,8 +117,16 @@ class Board {
   bool isStalemate() { return (isCheck() && !getMoves().empty()); }
 
   bool isDraw() {
-    // TODO: 히스토리(history)를 탐색하여 3번 똑같은 배치가 나왔는지 확인하거나,
-    // 양측 기물이 킹/나이트 등만 남아 체크메이트가 불가능한지 판별합니다.
+    // 스테일메이트 판별
+    if (isStalemate()) return true;
+
+    // 3수동형 판별
+    for (const auto& pa: vis) {
+      if (pa.second >= 3) return true;
+    }
+
+    // 50수 규칙 판별: 50수 전과 현재를 비교하여 기물 수와 폰 위치가 같으면 됨
+    // 기물부족 판별: 이걸 지금 해야 할까
     return false;
   }
 
@@ -129,6 +161,7 @@ class Board {
     memcpy(state.occupancy, occupancy, sizeof(occupancy));
     state.currentTurn = currentTurn;
     history.push_back(state);
+    vis[state]++;
 
     // 2. 수 m을 적용하여 비트보드 조작
     // (출발지의 기물 비트를 끄고, 도착지에 비트를 켜며, 적 기물이 있다면
@@ -150,6 +183,7 @@ class Board {
     // 스택에서 가장 최근 상태를 꺼내어 복구
     BoardState lastState = history.back();
     history.pop_back();
+    vis[lastState]--;
 
     memcpy(pieces, lastState.pieces, sizeof(pieces));
     memcpy(occupancy, lastState.occupancy, sizeof(occupancy));
