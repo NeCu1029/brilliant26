@@ -27,6 +27,15 @@ class Move {
     endFile = file;
     endRank = rank;
   }
+
+  bool operator== (const Move& other) {
+    return (
+      startFile == other.startFile &&
+      startRank == other.startRank &&
+      endFile == other.endFile &&
+      endRank == other.endRank
+    );
+  }
 };
 
 struct BoardState {
@@ -90,8 +99,10 @@ class Board {
   }
 
   bool isValid(Move m) {
-    // TODO: getMoves() 목록에 해당 Move m이 존재하는지 확인합니다.
-    return true;
+    for (Move i: getMoves()) {
+      if (i == m) return true;
+    }
+    return false;
   }
 
   char getPiece(int file, int rank) {
