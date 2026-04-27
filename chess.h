@@ -1,4 +1,6 @@
-#include <bits/stdc++.h>
+#include <iostream>
+#include <vector>
+#include <cstring>
 using namespace std;
 using ull = unsigned long long;
 
@@ -168,3 +170,6 @@ class Board {
     currentTurn = lastState.currentTurn;
   }
 };
+int main(){
+  return 0;
+}
