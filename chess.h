@@ -3,7 +3,8 @@
 #include <vector>
 using namespace std;
 using ull = unsigned long long;
-
+const ull FILE_A = 0x8080808080808080ULL;
+const ull FILE_H = 0x0101010101010101ULL;
 // ==========================================
 // 1. Move 클래스: 하나의 수를 저장
 // ==========================================
@@ -24,10 +25,18 @@ class Move {
     startFile = file;
     startRank = rank;
   }
+  void setStart(pair<int,int> PII) {
+    startFile = PII.first;
+    startRank = PII.second;
+  }
 
   void setEnd(int file, int rank) {
     endFile = file;
     endRank = rank;
+  }
+  void setEnd(pair<int,int> PII) {
+    endFile = PII.first;
+    endRank = PII.second;
   }
 };
 
@@ -38,7 +47,10 @@ struct BoardState {
   ull pieces[2][7];  // [color][type] 0:White, 1:Black / 1:P, 2:N, 3:B, 4:R,
                      // 5:Q, 6:K
   ull occupancy[2];
-  ull NotMoved[2] = {}; //킹, 룩, 폰의 초기 위치에서 변화 여부를 저장
+  ull notmoved[2] = {
+      0xFF89ULL,             // 백 초기 세팅
+      0x89FF000000000000ULL  // 흑 초기 세팅
+  };  // 킹, 룩, 폰의 초기 위치에서 변화 여부를 저장
   int currentTurn;   // 0: 백 차례, 1: 흑 차례
   // 3수 동형, 50수 규칙을 위한 카운터나 해시값 등을 여기에 추가할 수 있습니다.
 };
@@ -74,13 +86,13 @@ class Board {
  public:
   // 생성자: 체스판 초기 세팅
   Board() {
-    memset(pieces, 0, sizeof(pieces));
-    currentTurn = 0;
+    memset(state.pieces, 0, sizeof(state.pieces));
+    state.currentTurn = 0;
     updateOccupancy();
   }
 
   // 현재 차례를 반환 (백 0, 흑 1)
-  int turn() { return currentTurn; }
+  int turn() { return state.currentTurn; }
 
   // 현재 차례인 쪽이 둘 수 있는 수를 모두 반환
   vector<Move> getMoves() {
@@ -91,14 +103,23 @@ class Board {
       for (int i = 1; i <= ULONG_LONG_MAX >> 8; i <<= 1){
         if(i & state.pieces[0][1]){
           mv.setStart(IndexTosq(i));
-          mv.setEnd(IndexTosq(i << 3));
+          mv.setEnd(IndexTosq(i << 8));
           moves.push_back(mv);
-          if(notmoved & i){
-            mv.setEnd(IndexTosq(i << 6));
-            notmoved ^= i;
+          if(state.notmoved[0] & i){
+            mv.setEnd(IndexTosq(i << 16));
+            state.notmoved[0] ^= i;
             moves.push_back(mv);
           }
-          if(state.occupancy[1] & )
+          if (!(i & FILE_A) &&
+              state.occupancy[1] &i << 9) {  // i가 A열에 있지 않고 좌상단이 비어 있는 경우
+            mv.setEnd(IndexTosq(i << 9));
+            state.notmoved[0] ^= i;
+          }
+          if (!(i & FILE_H) &&
+              state.occupancy[1] & i << 9) {  // i가 H열에 있지 않고 우상단이 비어 있는 경우
+            mv.setEnd(IndexTosq(i << 9));
+            state.notmoved[0] ^= i;
+          }
         }
       }
       //knight
@@ -145,7 +166,7 @@ class Board {
 
     for (int c = 0; c < 2; c++) {
       for (int t = 1; t <= 6; t++) {
-        if (pieces[c][t] & bit) {
+        if (state.pieces[c][t] & bit) {
           // 백(0)은 대문자, 흑(1)은 소문자
           return c == 0 ? pieceChars[t] : tolower(pieceChars[t]);
         }
@@ -161,10 +182,6 @@ class Board {
     }
 
     // 1. 현재 상태를 백업하여 히스토리에 저장 (undo를 위해)
-    BoardState state;
-    memcpy(state.pieces, pieces, sizeof(pieces));
-    memcpy(state.occupancy, occupancy, sizeof(occupancy));
-    state.currentTurn = currentTurn;
     history.push_back(state);
 
     // 2. 수 m을 적용하여 비트보드 조작
@@ -175,7 +192,7 @@ class Board {
 
     // TODO: pieces 비트 조작 및 턴 넘기기 로직
 
-    currentTurn ^= 1;  // 0과 1을 토글(턴 넘김)
+    state.currentTurn ^= 1;  // 0과 1을 토글(턴 넘김)
     updateOccupancy();
   }
 
@@ -189,9 +206,9 @@ class Board {
     BoardState lastState = history.back();
     history.pop_back();
 
-    memcpy(pieces, lastState.pieces, sizeof(pieces));
-    memcpy(occupancy, lastState.occupancy, sizeof(occupancy));
-    currentTurn = lastState.currentTurn;
+    memcpy(state.pieces, lastState.pieces, sizeof(state.pieces));
+    memcpy(state.occupancy, lastState.occupancy, sizeof(state.occupancy));
+    state.currentTurn = lastState.currentTurn;
   }
 };
 int main() { return 0; }
