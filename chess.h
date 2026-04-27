@@ -64,9 +64,7 @@ class Board {
     updateOccupancy();
   }
 
-  int turn() {
-    return currentTurn;
-  }
+  int turn() { return currentTurn; }
 
   vector<Move> getMoves() {
     vector<Move> moves;
@@ -76,15 +74,14 @@ class Board {
     return moves;
   }
 
-  bool isCheckmate() {
-    // TODO: 킹이 공격받고 있고(Check), getMoves()의 결과가 비어있으면 true
+  bool isCheck() {
+    // TODO: 킹이 공격받고 있으면 true
     return false;
   }
 
-  bool isStalemate() {
-    // TODO: 킹이 공격받지 않고 있고, getMoves()의 결과가 비어있으면 true
-    return false;
-  }
+  bool isCheckmate() { return (isCheck() && getMoves().empty()); }
+
+  bool isStalemate() { return (isCheck() && !getMoves().empty()); }
 
   bool isDraw() {
     // TODO: 히스토리(history)를 탐색하여 3번 똑같은 배치가 나왔는지 확인하거나,
@@ -98,10 +95,9 @@ class Board {
   }
 
   char getPiece(int file, int rank) {
+    const char pieceChars[8] = ".PNBRQK";
     int bitIndex = sqToIndex(file, rank);
     ull bit = 1ULL << bitIndex;
-
-    const char pieceChars[] = {' ', 'P', 'N', 'B', 'R', 'Q', 'K'};
 
     for (int c = 0; c < 2; c++) {
       for (int t = 1; t <= 6; t++) {
