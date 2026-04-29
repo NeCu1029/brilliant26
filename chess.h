@@ -568,7 +568,23 @@ class Board {
     for (const auto& pa: vis) {
       if (pa.second >= 3) return true;
     }
-    // TODO: 50수 규칙, 기물부족
+
+    int s = history.size(), c1 = 0, c2 = 0;
+    if (s > 100) {
+      for (int i = 0; i < 64; i++) {
+        if (history[s - 1].occupancy[0] & (1ULL << i)) c1++;
+        if (history[s - 1].occupancy[1] & (1ULL << i)) c1++;
+        if (history[s - 101].occupancy[0] & (1ULL << i)) c2++;
+        if (history[s - 101].occupancy[0] & (1ULL << i)) c2++;
+      }
+      if (
+        c1 == c2 &&
+        history[s - 1].pieces[0][1] == history[s - 101].pieces[0][1] &&
+        history[s - 1].pieces[1][1] == history[s - 101].pieces[1][1]
+      ) return true;
+    }
+
+    // 기물 부족
     return false;
   }
 
